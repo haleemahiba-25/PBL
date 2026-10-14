@@ -1,0 +1,48 @@
+// Function to calculate and execute Round Robin scheduling
+void calculate_round_robin(struct Process p[], int n, int time_quantum) {
+    int current_time = 0;
+    int completed = 0;
+
+    // Initialize remaining times
+    for (int i = 0; i < n; i++) {
+        p[i].remaining_time = p[i].burst_time;
+    }
+
+    printf("\n--- Round Robin Scheduling Results ---\n");
+    printf("PID\tArrival\tBurst\tCompletion\tTurnaround\tWaiting\n");
+
+    while (completed < n) {
+        int all_idle = 1;
+
+        for (int i = 0; i < n; i++) {
+            if (p[i].arrival_time <= current_time && p[i].remaining_time > 0) {
+                all_idle = 0;
+
+                if (p[i].remaining_time > time_quantum) {
+                    current_time += time_quantum;
+                    p[i].remaining_time -= time_quantum;
+                } else {
+                    current_time += p[i].remaining_time;
+                    p[i].completion_time = current_time;
+                    p[i].turnaround_time = p[i].completion_time - p[i].arrival_time;
+                    p[i].waiting_time = p[i].turnaround_time - p[i].burst_time;
+                    p[i].remaining_time = 0;
+                    completed++;
+
+                    printf("%d\t%d\t%d\t%d\t\t%d\t\t%d\n", 
+                        p[i].pid, 
+                        p[i].arrival_time, 
+                        p[i].burst_time, 
+                        p[i].completion_time, 
+                        p[i].turnaround_time, 
+                        p[i].waiting_time);
+                }
+            }
+        }
+
+        // If no process has arrived yet, advance time
+        if (all_idle) {
+            current_time++;
+        }
+    }
+}
