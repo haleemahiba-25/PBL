@@ -55,23 +55,3 @@ void dequeue() {
     }
 }
 
-// Main Simulation Loop
-int main() {
-    printf("=== Starting Basic Simulator Engine ===\n");
-
-    // Simulating some operations
-    enqueue(101);
-    enqueue(102);
-    
-    push(50);
-    push(75);
-
-    memory[0] = 999; 
-    printf("[LOG] MEMORY: Stored value %d at address 0\n", memory[0]);
-
-    dequeue();
-    pop();
-
-    printf("=== Simulation Ended Successfully ===\n");
-    return 0;
-}
