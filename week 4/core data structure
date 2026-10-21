@@ -1,1 +1,116 @@
 
+#include <stdio.h>
+
+#define MAX_PROCESSES 10
+#define MAX_RESOURCES 10
+
+// Structure to hold system state
+struct SystemState {
+    int num_processes;
+    int num_resources;
+    
+    int available[MAX_RESOURCES];                 // Available Resource Vector
+    int max_matrix[MAX_PROCESSES][MAX_RESOURCES];    // Maximum Requirement Matrix
+    int allocation[MAX_PROCESSES][MAX_RESOURCES];    // Allocation Matrix
+    int need[MAX_PROCESSES][MAX_RESOURCES];          // Need Matrix
+};
+
+// Function to initialize processes, resources, and matrices
+void initialize_system(struct SystemState *sys) {
+    printf("Enter number of processes: ");
+    scanf("%d", &sys->num_processes);
+
+    printf("Enter number of resource types: ");
+    scanf("%d", &sys->num_resources);
+
+    printf("\n--- Enter Available Resources ---\n");
+    for (int j = 0; j < sys->num_resources; j++) {
+        printf("Resource type R%d available instances: ", j + 1);
+        scanf("%d", &sys->available[j]);
+    }
+
+    printf("\n--- Enter Allocation Matrix ---\n");
+    for (int i = 0; i < sys->num_processes; i++) {
+        printf("For Process P%d:\n", i);
+        for (int j = 0; j < sys->num_resources; j++) {
+            printf("  Allocated instances of R%d: ", j + 1);
+            scanf("%d", &sys->allocation[i][j]);
+        }
+    }
+
+    printf("\n--- Enter Maximum Matrix ---\n");
+    for (int i = 0; i < sys->num_processes; i++) {
+        printf("For Process P%d:\n", i);
+        for (int j = 0; j < sys->num_resources; j++) {
+            printf("  Maximum required instances of R%d: ", j + 1);
+            scanf("%d", &sys->max_matrix[i][j]);
+        }
+    }
+}
+
+// Function to calculate Need Matrix = Max - Allocation
+void calculate_need_matrix(struct SystemState *sys) {
+    for (int i = 0; i < sys->num_processes; i++) {
+        for (int j = 0; j < sys->num_resources; j++) {
+            sys->need[i][j] = sys->max_matrix[i][j] - sys->allocation[i][j];
+            
+            // Basic error check for invalid inputs
+            if (sys->need[i][j] < 0) {
+                printf("Error: Allocation exceeds Max for Process P%d, Resource R%d!\n", i, j);
+                sys->need[i][j] = 0;
+            }
+        }
+    }
+}
+
+// Function to display current system status matrices
+void display_system_status(struct SystemState *sys) {
+    printf("\n================ SYSTEM STATUS ================\n");
+    
+    printf("\nAvailable Vector:\n");
+    for (int j = 0; j < sys->num_resources; j++) {
+        printf("R%d: %d  ", j + 1, sys->available[j]);
+    }
+    printf("\n");
+
+    printf("\nPID\tAllocation\t\tMax\t\t\tNeed\n");
+    for (int i = 0; i < sys->num_processes; i++) {
+        printf("P%d\t", i);
+        
+        // Print Allocation row
+        for (int j = 0; j < sys->num_resources; j++) {
+            printf("%d ", sys->allocation[i][j]);
+        }
+        printf("\t\t");
+        
+        // Print Max row
+        for (int j = 0; j < sys->num_resources; j++) {
+            printf("%d ", sys->max_matrix[i][j]);
+        }
+        printf("\t\t");
+        
+        // Print Need row
+        for (int j = 0; j < sys->num_resources; j++) {
+            printf("%d ", sys->need[i][j]);
+        }
+        printf("\n");
+    }
+    printf("===============================================\n");
+}
+
+int main() {
+    struct SystemState sys;
+
+    printf("=== DEADLOCK SIMULATION SYSTEM (MEMBER 1 MODULE) ===\n");
+    
+    // Step 1: Initialize inputs
+    initialize_system(&sys);
+
+    // Step 2: Compute Need Matrix
+    calculate_need_matrix(&sys);
+
+    // Step 3: Print and verify output
+    display_system_status(&sys);
+
+    return 0;
+}
