@@ -1,0 +1,108 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+#define MAX_PROCESSES 10
+#define MAX_RESOURCES 10
+
+// Structure definition matching Member 1
+struct SystemState {
+    int num_processes;
+    int num_resources;
+    
+    int available[MAX_RESOURCES];                 // Available Resource Vector[cite: 3]
+    int max_matrix[MAX_PROCESSES][MAX_RESOURCES];    // Maximum Requirement Matrix[cite: 3]
+    int allocation[MAX_PROCESSES][MAX_RESOURCES];    // Allocation Matrix[cite: 3]
+    int need[MAX_PROCESSES][MAX_RESOURCES];          // Need Matrix[cite: 3]
+};
+
+// Function to run Banker's Algorithm and find a Safe Sequence
+bool run_bankers_algorithm(struct SystemState *sys, int safe_seq[]) {
+    int work[MAX_RESOURCES];
+    bool finish[MAX_PROCESSES] = {false};
+    
+    // Step 1: Initialize Work = Available
+    for (int j = 0; j < sys->num_resources; j++) {
+        work[j] = sys->available[j];
+    }
+
+    int count = 0;
+    while (count < sys->num_processes) {
+        bool found = false;
+
+        for (int i = 0; i < sys->num_processes; i++) {
+            // If process is not finished yet
+            if (!finish[i]) {
+                // Check if Need[i] <= Work
+                bool can_allocate = true;
+                for (int j = 0; j < sys->num_resources; j++) {
+                    if (sys->need[i][j] > work[j]) {
+                        can_allocate = false;
+                        break;
+                    }
+                }
+
+                // If resources can be allocated to process i
+                if (can_allocate) {
+                    for (int j = 0; j < sys->num_resources; j++) {
+                        work[j] += sys->allocation[i][j]; // Free up allocated resources
+                    }
+                    safe_seq[count++] = i;
+                    finish[i] = true;
+                    found = true;
+                }
+            }
+        }
+
+        // If no allocation was made in this pass, the system is in an unsafe state
+        if (!found) {
+            return false; // UNSAFE state
+        }
+    }
+
+    return true; // SAFE state[cite: 3]
+}
+
+// Function to simulate a dynamic resource request by a process
+void request_resources(struct SystemState *sys, int pid, int request[]) {
+    // Step 1: Check if Request <= Need
+    for (int j = 0; j < sys->num_resources; j++) {
+        if (request[j] > sys->need[pid][j]) {
+            printf("\nError: Process P%d has exceeded its maximum claim!\n", pid);
+            return;
+        }
+    }
+
+    // Step 2: Check if Request <= Available
+    for (int j = 0; j < sys->num_resources; j++) {
+        if (request[j] > sys->available[j]) {
+            printf("\nProcess P%d must wait. Resources are not available.\n", pid);
+            return;
+        }
+    }
+
+    // Step 3: Temporarily pretend to allocate resources
+    for (int j = 0; j < sys->num_resources; j++) {
+        sys->available[j] -= request[j];
+        sys->allocation[pid][j] += request[j];
+        sys->need[pid][j] -= request[j];
+    }
+
+    int safe_seq[MAX_PROCESSES];
+    // Step 4: Run Banker's Algorithm to check safety
+    if (run_bankers_algorithm(sys, safe_seq)) {
+        printf("\n=> State is SAFE. Resource request for P%d granted successfully!\n", pid);
+        printf("Safe Sequence: ");
+        for (int i = 0; i < sys->num_processes; i++) {
+            printf("P%d ", safe_seq[i]);
+        }
+        printf("\n");
+    } else {
+        printf("\n=> State is UNSAFE! Rolling back resource allocation for P%d.\n", pid);
+        // Rollback state
+        for (int j = 0; j < sys->num_resources; j++) {
+            sys->available[j] += request[j];
+            sys->allocation[pid][j] -= request[j];
+            sys->need[pid][j] += request[j];
+        }
+    }
+}
