@@ -28,7 +28,7 @@ The project is divided among 4 module roles:
 ##  How to Compile and Run
 
 ### Prerequisites
-* GCC Compiler installed (works on Linux/Kali Linux, macOS, and Windows via MinGW/WSL).
+* GCC Compiler installed .
 
 ### Compilation
 Navigate to the project source directory and compile all C files together:
