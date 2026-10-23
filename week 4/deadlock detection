@@ -1,0 +1,158 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+#define MAX_PROCESSES 10
+#define MAX_RESOURCES 10
+
+// Structure definition matching previous members (extended with a Request matrix for detection)
+struct SystemState {
+    int num_processes;
+    int num_resources;
+    
+    int available[MAX_RESOURCES];                 // Available Resource Vector[cite: 3]
+    int max_matrix[MAX_PROCESSES][MAX_RESOURCES];    // Maximum Requirement Matrix[cite: 3]
+    int allocation[MAX_PROCESSES][MAX_RESOURCES];    // Allocation Matrix[cite: 3]
+    int request[MAX_PROCESSES][MAX_RESOURCES];       // Current Resource Request Matrix[cite: 3]
+};
+
+// 1. Resource Allocation Graph (RAG) Display Function
+void display_rag(struct SystemState *sys) {
+    printf("\n================ RESOURCE ALLOCATION GRAPH (RAG) ================\n");
+    printf("Legend: [Process] ---> (Allocated Resource)  |  (Requested Resource) ---> [Process]\n\n");
+    
+    for (int i = 0; i < sys->num_processes; i++) {
+        printf("Process P%d:\n", i);
+        
+        // Show what resources are allocated TO the process
+        printf("  |-- Holds (Allocated): ");
+        bool has_allocation = false;
+        for (int j = 0; j < sys->num_resources; j++) {
+            if (sys->allocation[i][j] > 0) {
+                printf("R%d (%d inst) ", j + 1, sys->allocation[i][j]);
+                has_allocation = true;
+            }
+        }
+        if (!has_allocation) printf("None");
+        printf("\n");
+
+        // Show what resources the process is requesting
+        printf("  |-- Requests       : ");
+        bool has_request = false;
+        for (int j = 0; j < sys->num_resources; j++) {
+            if (sys->request[i][j] > 0) {
+                printf("R%d (%d inst) ", j + 1, sys->request[i][j]);
+                has_request = true;
+            }
+        }
+        if (!has_request) printf("None");
+        printf("\n\n");
+    }
+    printf("=================================================================\n");
+}
+
+// 2. Deadlock Detection Algorithm
+bool detect_deadlock(struct SystemState *sys, int deadlocked_processes[], int *deadlock_count) {
+    int work[MAX_RESOURCES];
+    bool finish[MAX_PROCESSES];
+    *deadlock_count = 0;
+
+    // Step a: Initialize Work = Available
+    for (int j = 0; j < sys->num_resources; j++) {
+        work[j] = sys->available[j];
+    }
+
+    // Step b: Initialize Finish array
+    for (int i = 0; i < sys->num_processes; i++) {
+        // If allocation is all zeros, consider it finished for detection purposes
+        bool allocated_zero = true;
+        for (int j = 0; j < sys->num_resources; j++) {
+            if (sys->allocation[i][j] > 0) {
+                allocated_zero = false;
+                break;
+            }
+        }
+        
+        if (allocated_zero) {
+            finish[i] = true;
+        } else {
+            finish[i] = false;
+        }
+    }
+
+    // Step c: Loop to find processes that can complete
+    bool progress;
+    do {
+        progress = false;
+        for (int i = 0; i < sys->num_processes; i++) {
+            if (!finish[i]) {
+                // Check if Request[i] <= Work
+                bool can_satisfy = true;
+                for (int j = 0; j < sys->num_resources; j++) {
+                    if (sys->request[i][j] > work[j]) {
+                        can_satisfy = false;
+                        break;
+                    }
+                }
+
+                if (can_satisfy) {
+                    // Release resources back to work vector
+                    for (int j = 0; j < sys->num_resources; j++) {
+                        work[j] += sys->allocation[i][j];
+                    }
+                    finish[i] = true;
+                    progress = true;
+                }
+            }
+        }
+    } while (progress);
+
+    // Step d: Check if any process is unfinished (deadlocked)
+    bool is_deadlocked = false;
+    for (int i = 0; i < sys->num_processes; i++) {
+        if (!finish[i]) {
+            deadlocked_processes[(*deadlock_count)++] = i;
+            is_deadlocked = true;
+        }
+    }
+
+    return is_deadlocked; // True if deadlock detected
+}
+
+// 3. Deadlock Recovery Mechanism (Process Termination Strategy)
+void recover_from_deadlock(struct SystemState *sys) {
+    int deadlocked_processes[MAX_PROCESSES];
+    int deadlock_count = 0;
+
+    if (!detect_deadlock(sys, deadlocked_processes, &deadlock_count)) {
+        printf("\nNo deadlock detected in the system. Recovery not required.\n");
+        return;
+    }
+
+    printf("\n⚠️ DEADLOCK DETECTED! Processes involved: ");
+    for (int i = 0; i < deadlock_count; i++) {
+        printf("P%d ", deadlocked_processes[i]);
+    }
+    printf("\n");
+
+    printf("\nInitiating Recovery (Terminating deadlocked processes one by one)...\n");
+
+    // Terminate processes involved in the deadlock to reclaim resources
+    for (int i = 0; i < deadlock_count; i++) {
+        int pid = deadlocked_processes[i];
+        printf("-> Terminating Process P%d to release resources...\n", pid);
+
+        // Reclaim allocated resources back to Available vector
+        for (int j = 0; j < sys->num_resources; j++) {
+            sys->available[j] += sys->allocation[pid][j];
+            sys->allocation[pid][j] = 0;
+            sys->request[pid][j] = 0;
+        }
+
+        // Re-check if deadlock is resolved
+        int remaining_deadlocks = 0;
+        if (!detect_deadlock(sys, deadlocked_processes, &remaining_deadlocks)) {
+            printf("=> Recovery Successful! Deadlock resolved after terminating Process P%d.\n", pid);
+            return;
+        }
+    }
+}
