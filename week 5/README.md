@@ -1,6 +1,6 @@
 # Week 5: Simulation and Comparative Analysis of Page Replacement Algorithms
 
-## 📖 Project Overview
+## Project Overview
 This project simulates and compares three fundamental page replacement algorithms used in operating systems virtual memory management:
 1. **FIFO (First-In, First-Out)**
 2. **LRU (Least Recently Used)**
@@ -10,7 +10,7 @@ The program accepts a user-defined page-reference string and frame count, proces
 
 ---
 
-## 👥 Team Task Division (4-Member Distribution)
+##  Team Task Division (4-Member Distribution)
 
 The project workload is modularized cleanly across a 4-member team:
 
@@ -35,7 +35,7 @@ The project workload is modularized cleanly across a 4-member team:
 
 ---
 
-## 📁 Repository Structure
+##  Repository Structure
 ```text
 week 5/
 ├── input.c        # Krithi: Input management and frame initialization
