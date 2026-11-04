@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+typedef struct {
+    int id, at, bt, ct, tat, wt, rt;
+    bool completed;
+} Process;
+
+int main() {
+    int n;
+    printf("--- SJF (NON-PREEMPTIVE) SCHEDULING ---\n");
+    printf("Enter number of processes: ");
+    if (scanf("%d", &n) != 1 || n <= 0) return 0;
+
+    Process p[n];
+    for (int i = 0; i < n; i++) {
+        p[i].id = i + 1;
+        p[i].completed = false;
+        printf("P%d - Arrival Time & Burst Time: ", p[i].id);
+        scanf("%d %d", &p[i].at, &p[i].bt);
+    }
+
+    int completed = 0, current_time = 0, total_bt = 0;
+    float total_wt = 0, total_tat = 0, total_rt = 0;
+    int g_pid[100], g_start[100], g_end[100], g_count = 0;
+
+    while (completed < n) {
+        int idx = -1;
+        int min_bt = 1e9;
+
+        for (int i = 0; i < n; i++) {
+            if (p[i].at <= current_time && !p[i].completed) {
+                if (p[i].bt < min_bt) {
+                    min_bt = p[i].bt;
+                    idx = i;
+                } else if (p[i].bt == min_bt) {
+                    if (p[i].at < p[idx].at) idx = i;
+                }
+            }
+        }
+
+        if (idx != -1) {
+            p[idx].rt = current_time - p[idx].at;
+
+            g_pid[g_count] = p[idx].id;
+            g_start[g_count] = current_time;
+            current_time += p[idx].bt;
+            g_end[g_count] = current_time;
+            g_count++;
+
+            p[idx].ct = current_time;
+            p[idx].tat = p[idx].ct - p[idx].at;
+            p[idx].wt = p[idx].tat - p[idx].bt;
+            p[idx].completed = true;
+
+            total_bt += p[idx].bt;
+            total_tat += p[idx].tat;
+            total_wt += p[idx].wt;
+            total_rt += p[idx].rt;
+            completed++;
+        } else {
+            g_pid[g_count] = 0;
+            g_start[g_count] = current_time;
+            current_time++;
+            g_end[g_count] = current_time;
+            if (g_count > 0 && g_pid[g_count - 1] == 0) {
+                g_end[g_count - 1] = current_time;
+            } else {
+                g_count++;
+            }
+        }
+    }
+
+    printf("\nPID\tAT\tBT\tCT\tTAT\tWT\tRT\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p[i].id, p[i].at, p[i].bt, p[i].ct, p[i].tat, p[i].wt, p[i].rt);
+    }
+
+    printf("\n--- GANTT CHART ---\n+");
+    for (int i = 0; i < g_count; i++) printf("-------+");
+    printf("\n|");
+    for (int i = 0; i < g_count; i++) {
+        if (g_pid[i] == 0) printf(" IDLE  |");
+        else printf("  P%-2d  |", g_pid[i]);
+    }
+    printf("\n+");
+    for (int i = 0; i < g_count; i++) printf("-------+");
+    printf("\n%d", g_start[0]);
+    for (int i = 0; i < g_count; i++) printf("%8d", g_end[i]);
+    printf("\n");
+
+    printf("\nAverage Turnaround Time: %.2f", total_tat / n);
+    printf("\nAverage Waiting Time: %.2f", total_wt / n);
+    printf("\nAverage Response Time: %.2f", total_rt / n);
+    printf("\nCPU Utilization: %.2f%%\n", ((float)total_bt / current_time) * 100);
+
+    return 0;
+}
