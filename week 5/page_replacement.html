@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Replacement Algorithms Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'Fira Code', monospace; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-x-hidden">
+
+    <!-- Top Navigation Header -->
+    <header class="glass-panel sticky top-0 z-50 border-b border-slate-800 px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600/20 text-indigo-400 p-2 rounded-lg border border-indigo-500/30">
+                <i class="fa-solid fa-memory text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+                    Page Replacement Simulator
+                    <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Virtual Memory Engine v1.0</span>
+                </h1>
+                <p class="text-xs text-slate-400">Comparative Analysis: FIFO, LRU, & Optimal Replacement Strategies</p>
+            </div>
+        </div>
+
+        <!-- Preset Action Buttons -->
+        <div class="flex items-center gap-2">
+            <button onclick="loadPDFPreset()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-file-pdf"></i> Load PDF Sample Preset
+            </button>
+            <button onclick="resetSimulation()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 lg:p-6 overflow-y-auto">
+        
+        <!-- Left Column: Controls & Comparative Summary (4 cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-4">
+            
+            <!-- Input Parameters Form -->
+            <div class="glass-panel rounded-xl p-4 shadow-xl space-y-4">
+                <h2 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i> Simulation Parameters
+                </h2>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Page-Reference String (Space-Separated)</label>
+                    <input type="text" id="refString" value="7 0 1 2 0 3 0 4 2 3" 
+                           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Number of Memory Page Frames</label>
+                    <input type="number" id="frameCount" min="1" max="7" value="3" 
+                           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Target Algorithm View</label>
+                    <select id="algorithmSelect" onchange="runSimulation()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                        <option value="ALL">Compare All Algorithms</option>
+                        <option value="FIFO">FIFO (First-In-First-Out)</option>
+                        <option value="LRU">LRU (Least Recently Used)</option>
+                        <option value="OPTIMAL">Optimal (Belady's Algorithm)</option>
+                    </select>
+                </div>
+
+                <button onclick="runSimulation()" class="w-full py-2.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Run Simulation
+                </button>
+            </div>
+
+            <!-- Performance Comparison Metrics Summary -->
+            <div class="glass-panel rounded-xl p-4 shadow-xl flex-1 flex flex-col">
+                <h2 class="text-sm font-semibold text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-simple text-indigo-400"></i> Performance Summary
+                </h2>
+
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="py-2 px-2">Algorithm</th>
+                                <th class="py-2 px-2 text-center">Hits</th>
+                                <th class="py-2 px-2 text-center">Faults</th>
+                                <th class="py-2 px-2 text-right">Fault Ratio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTableBody" class="font-mono divide-y divide-slate-800/50">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Fault Comparison Bars -->
+                <div class="mt-4 pt-3 border-t border-slate-800 space-y-2" id="comparisonBars">
+                    <!-- Dynamic Bars populated by JS -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Step-by-Step Trace & Visual Tables (8 cols) -->
+        <section class="lg:col-span-8 flex flex-col gap-4">
+            
+            <div class="glass-panel rounded-xl p-4 shadow-xl flex-1 flex flex-col">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                    <h2 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-indigo-400"></i> Step-by-Step Memory Frame Execution Trace
+                    </h2>
+                    <div class="flex items-center gap-4 text-xs">
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-500/20 border border-emerald-500 inline-block"></span> Hit</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-rose-500/20 border border-rose-500 inline-block"></span> Fault</span>
+                    </div>
+                </div>
+
+                <!-- Step-by-Step Execution Container -->
+                <div id="simulationOutput" class="space-y-6 overflow-y-auto pr-1 flex-1">
+                    <!-- Step tables populated by JS -->
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        window.onload = function() {
+            runSimulation();
+        };
+
+        function loadPDFPreset() {
+            document.getElementById('refString').value = "7 0 1 2 0 3 0 4 2 3";
+            document.getElementById('frameCount').value = 3;
+            runSimulation();
+        }
+
+        function resetSimulation() {
+            document.getElementById('refString').value = "";
+            document.getElementById('frameCount').value = 3;
+            document.getElementById('simulationOutput').innerHTML = '';
+            document.getElementById('summaryTableBody').innerHTML = '';
+            document.getElementById('comparisonBars').innerHTML = '';
+        }
+
+        function parseInput() {
+            const raw = document.getElementById('refString').value.trim();
+            const frames = parseInt(document.getElementById('frameCount').value) || 3;
+            if (!raw) return { pages: [], frames };
+            const pages = raw.split(/\s+/).map(Number).filter(n => !isNaN(n));
+            return { pages, frames };
+        }
+
+        function runSimulation() {
+            const { pages, frames } = parseInput();
+            if (pages.length === 0) return;
+
+            const selectedAlgo = document.getElementById('algorithmSelect').value;
+            const outputContainer = document.getElementById('simulationOutput');
+            const summaryContainer = document.getElementById('summaryTableBody');
+            const barsContainer = document.getElementById('comparisonBars');
+
+            outputContainer.innerHTML = '';
+            summaryContainer.innerHTML = '';
+            barsContainer.innerHTML = '';
+
+            const results = {};
+
+            if (selectedAlgo === 'ALL' || selectedAlgo === 'FIFO') {
+                results['FIFO'] = simulateFIFO(pages, frames);
+            }
+            if (selectedAlgo === 'ALL' || selectedAlgo === 'LRU') {
+                results['LRU'] = simulateLRU(pages, frames);
+            }
+            if (selectedAlgo === 'ALL' || selectedAlgo === 'OPTIMAL') {
+                results['OPTIMAL'] = simulateOptimal(pages, frames);
+            }
+
+            // Render Trace Tables & Summary Metrics
+            let maxFaults = 0;
+            Object.keys(results).forEach(key => {
+                if (results[key].faults > maxFaults) maxFaults = results[key].faults;
+                renderTraceTable(key, results[key], pages, frames);
+                renderSummaryRow(key, results[key], pages.length);
+            });
+
+            // Render Comparison Visual Bars
+            Object.keys(results).forEach(key => {
+                const faultPct = Math.round((results[key].faults / pages.length) * 100);
+                const barHTML = `
+                    <div>
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="font-semibold text-slate-300">${key}</span>
+                            <span class="text-slate-400 font-mono">${results[key].faults} Faults (${faultPct}%)</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                            <div class="h-full bg-indigo-500 rounded-full" style="width: ${faultPct}%"></div>
+                        </div>
+                    </div>
+                `;
+                barsContainer.innerHTML += barHTML;
+            });
+        }
+
+        // --- FIFO ALGORITHM ---
+        function simulateFIFO(pages, frames) {
+            const history = [];
+            const memory = [];
+            let hits = 0;
+            let faults = 0;
+            let fifoPointer = 0;
+
+            pages.forEach((page) => {
+                const isHit = memory.includes(page);
+                if (isHit) {
+                    hits++;
+                } else {
+                    faults++;
+                    if (memory.length < frames) {
+                        memory.push(page);
+                    } else {
+                        memory[fifoPointer] = page;
+                        fifoPointer = (fifoPointer + 1) % frames;
+                    }
+                }
+                history.push({ page, memory: [...memory], isHit });
+            });
+
+            return { hits, faults, history };
+        }
+
+        // --- LRU ALGORITHM ---
+        function simulateLRU(pages, frames) {
+            const history = [];
+            const memory = [];
+            const recentUse = [];
+            let hits = 0;
+            let faults = 0;
+
+            pages.forEach((page, step) => {
+                const idx = memory.indexOf(page);
+                const isHit = idx !== -1;
+
+                if (isHit) {
+                    hits++;
+                    recentUse[idx] = step;
+                } else {
+                    faults++;
+                    if (memory.length < frames) {
+                        memory.push(page);
+                        recentUse.push(step);
+                    } else {
+                        // Find least recently used index
+                        let lruIdx = 0;
+                        let minStep = recentUse[0];
+                        for (let i = 1; i < frames; i++) {
+                            if (recentUse[i] < minStep) {
+                                minStep = recentUse[i];
+                                lruIdx = i;
+                            }
+                        }
+                        memory[lruIdx] = page;
+                        recentUse[lruIdx] = step;
+                    }
+                }
+                history.push({ page, memory: [...memory], isHit });
+            });
+
+            return { hits, faults, history };
+        }
+
+        // --- OPTIMAL ALGORITHM ---
+        function simulateOptimal(pages, frames) {
+            const history = [];
+            const memory = [];
+            let hits = 0;
+            let faults = 0;
+
+            pages.forEach((page, step) => {
+                const isHit = memory.includes(page);
+                if (isHit) {
+                    hits++;
+                } else {
+                    faults++;
+                    if (memory.length < frames) {
+                        memory.push(page);
+                    } else {
+                        // Find page not used for longest time in future
+                        let replaceIdx = -1;
+                        let farthest = step;
+
+                        for (let i = 0; i < frames; i++) {
+                            let nextUse = Infinity;
+                            for (let j = step + 1; j < pages.length; j++) {
+                                if (pages[j] === memory[i]) {
+                                    nextUse = j;
+                                    break;
+                                }
+                            }
+                            if (nextUse === Infinity) {
+                                replaceIdx = i;
+                                break;
+                            }
+                            if (nextUse > farthest) {
+                                farthest = nextUse;
+                                replaceIdx = i;
+                            }
+                        }
+                        if (replaceIdx === -1) replaceIdx = 0;
+                        memory[replaceIdx] = page;
+                    }
+                }
+                history.push({ page, memory: [...memory], isHit });
+            });
+
+            return { hits, faults, history };
+        }
+
+        // --- UI RENDER HELPERS ---
+        function renderTraceTable(title, res, pages, frameCount) {
+            const output = document.getElementById('simulationOutput');
+            const wrapper = document.createElement('div');
+            wrapper.className = "space-y-2";
+
+            let tableHTML = `
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-indigo-300 uppercase tracking-wider">${title} Execution Trace</h3>
+                    <div class="text-xs font-mono text-slate-400">Total Faults: <span class="text-rose-400 font-bold">${res.faults}</span></div>
+                </div>
+                <div class="overflow-x-auto bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+                    <table class="w-full text-xs font-mono text-center">
+                        <thead class="text-slate-500 border-b border-slate-800">
+                            <tr>
+                                <th class="py-1 px-2 text-left">Req Page</th>`;
+            
+            for (let f = 1; f <= frameCount; f++) tableHTML += `<th class="py-1 px-2">Frame ${f}</th>`;
+            tableHTML += `<th class="py-1 px-2 text-right">Status</th></tr></thead><tbody>`;
+
+            res.history.forEach(step => {
+                const statusBadge = step.isHit 
+                    ? `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">HIT</span>`
+                    : `<span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">FAULT</span>`;
+
+                tableHTML += `
+                    <tr class="border-b border-slate-800/30 hover:bg-slate-900/50">
+                        <td class="py-1.5 px-2 text-left font-bold text-cyan-400">${step.page}</td>`;
+                
+                for (let f = 0; f < frameCount; f++) {
+                    const val = step.memory[f] !== undefined ? step.memory[f] : '-';
+                    tableHTML += `<td class="py-1.5 px-2 text-slate-300">${val}</td>`;
+                }
+
+                tableHTML += `<td class="py-1.5 px-2 text-right">${statusBadge}</td></tr>`;
+            });
+
+            tableHTML += `</tbody></table></div>`;
+            wrapper.innerHTML = tableHTML;
+            output.appendChild(wrapper);
+        }
+
+        function renderSummaryRow(algoName, res, totalRefs) {
+            const tbody = document.getElementById('summaryTableBody');
+            const hitRatio = ((res.hits / totalRefs) * 100).toFixed(1);
+            const faultRatio = ((res.faults / totalRefs) * 100).toFixed(1);
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-900/50";
+            tr.innerHTML = `
+                <td class="py-2 px-2 font-bold text-slate-200">${algoName}</td>
+                <td class="py-2 px-2 text-center text-emerald-400">${res.hits}</td>
+                <td class="py-2 px-2 text-center text-rose-400">${res.faults}</td>
+                <td class="py-2 px-2 text-right text-indigo-300 font-semibold">${faultRatio}%</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    </script>
+</body>
+</html>
