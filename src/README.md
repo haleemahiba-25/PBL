@@ -1,4 +1,4 @@
-# Week 4: Multi-Process Simulator & POSIX IPC Engine
+# Week 2: Multi-Process Simulator & POSIX IPC Engine
 
 ##  Project Overview
 
